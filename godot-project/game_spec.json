@@ -1,0 +1,69 @@
+{
+  "game": {
+    "name": "Dragonspire Dominion",
+    "type": "2D",
+    "genre": "action-adventure",
+    "description": "An epic fantasy adventure where players explore the Dragonspire, battle dragons, collect treasures, and uncover ancient mysteries."
+  },
+  "settings": {
+    "window": {"width": 1024, "height": 768},
+    "physics": {"gravity": 980}
+  },
+  "player": {
+    "name": "Dragon Slayer",
+    "health": 100,
+    "max_health": 100,
+    "speed": 250,
+    "jump_velocity": -500,
+    "attack_damage": 25,
+    "abilities": ["move", "jump", "attack", "double_jump"]
+  },
+  "entities": {
+    "enemies": [
+      {
+        "name": "DragonWhelp",
+        "health": 50,
+        "speed": 80,
+        "damage": 15,
+        "behavior": "patrol",
+        "score_value": 100
+      },
+      {
+        "name": "AncientDragon",
+        "health": 200,
+        "speed": 60,
+        "damage": 30,
+        "behavior": "boss",
+        "score_value": 1000
+      }
+    ],
+    "collectibles": [
+      {
+        "name": "DragonGem",
+        "value": 50,
+        "type": "score"
+      },
+      {
+        "name": "HealthPotion",
+        "value": 25,
+        "type": "health"
+      }
+    ]
+  },
+  "levels": [
+    {
+      "name": "Dragonspire Peak",
+      "background": "mountain_castle",
+      "obstacles": ["spikes", "fire_traps", "falling_platforms"]
+    }
+  ],
+  "logic": {
+    "winCondition": "defeat_boss",
+    "loseCondition": "health_zero",
+    "scoring": {
+      "pointsPerKill": 100,
+      "pointsPerCollectible": 50,
+      "bossBonus": 1000
+    }
+  }
+}

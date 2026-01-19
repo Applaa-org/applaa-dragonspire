@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://m8i2k9l0m1n2o"]
+
+[ext_resource type="PackedScene" uid="uid://j5f9h4i5j6k7l" path="res://scenes/StartScreen.tscn" id="1"]
+
+[node name="Loader" type="Node"]
+process_mode = 3
+
+[node name="StartScreen" parent="." instance=ExtResource("1")]

@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://f1b5c0d9e0f1g"]
+
+[ext_resource type="Script" path="res://scripts/DragonGem.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/dragon_gem.png" id="2"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 16.0
+
+[node name="DragonGem" type="Area2D"]
+script = ExtResource("1")
+collision_layer = 32
+collision_mask = 2
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_1")
+animation = "idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_1"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2")
+}],
+"loop": false,
+"name": &"collect",
+"speed": 15.0
+}]

@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragonspire Dominion</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a0033, #330066);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: linear-gradient(to bottom, #2d1b69, #0f0c29);
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            overflow: hidden;
+        }
+        
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .ui-element {
+            position: absolute;
+            pointer-events: auto;
+        }
+        
+        #startScreen {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        #gameTitle {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+            margin-bottom: 20px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7), 0 0 10px #ffd700; }
+            to { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7), 0 0 20px #ffd700, 0 0 30px #ffd700; }
+        }
+        
+        #playerNameInput {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ffd700;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            margin-bottom: 10px;
+            width: 200px;
+        }
+        
+        #highScoreDisplay {
+            font-size: 20px;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+        
+        #leaderboard {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            min-width: 200px;
+        }
+        
+        .button {
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #ff6b35, #f72b1c);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #ff8c5a, #ff4433);
+        }
+        
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        .hud-item {
+            margin-bottom: 5px;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            display: inline-block;
+        }
+        
+        #gameOverScreen {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        #gameOverTitle {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .victory { color: #ffd700; }
+        .defeat { color: #ff4444; }
+        
+        #instructions {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="ui">
+            <!-- Start Screen -->
+            <div id="startScreen" class="ui-element">
+                <h1 id="gameTitle">Dragonspire Dominion</h1>
+                
+                <input type="text" id="playerNameInput" placeholder="Enter your name" maxlength="20">
+                
+                <div id="highScoreDisplay">High Score: 0</div>
+                
+                <div id="leaderboard">
+                    <div style="color: #ffd700; font-weight: bold; margin-bottom: 10px;">Top Scores</div>
+                    <div id="scoresList"></div>
+                </div>
+                
+                <div id="instructions">
+                    <strong>How to Play:</strong><br>
+                    W/A/S/D - Move<br>
+                    Space - Jump/Double Jump<br>
+                    Left Click - Attack<br>
+                    Defeat the Ancient Dragon!
+                </div>
+                
+                <button class="button" onclick="startGame()">Start Game</button>
+                <button class="button" onclick="closeGame()">Close</button>
+            </div>
+            
+            <!-- HUD -->
+            <div id="hud" style="display: none;">
+                <div class="hud-item" id="scoreDisplay">Score: 0</div>
+                <div class="hud-item" id="healthDisplay">Health: 100/100</div>
+                <div class="hud-item" id="highScoreHud">Best: 0</div>
+            </div>
+            
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="ui-element">
+                <h1 id="gameOverTitle">GAME OVER</h1>
+                <div id="finalScore" style="font-size: 24px; margin-bottom: 10px;">Final Score: 0</div>
+                <div id="newHighScore" style="font-size: 20px; color: #ffd700; margin-bottom: 10px; display: none;">🎉 NEW HIGH SCORE! 🎉</div>
+                <div id="finalHighScore" style="font-size: 20px; color: #ffd700; margin-bottom: 20px;">High Score: 0</div>
+                
+                <button class="button" onclick="restartGame()">Play Again</button>
+                <button class="button" onclick="mainMenu()">Main Menu</button>
+                <button class="button" onclick="closeGame()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = 'menu'; // menu, playing, victory, defeat
+        let score = 0;
+        let highScore = 0;
+        let playerName = '';
+        let scores = [];
+        
+        // Player
+        const player = {
+            x: 100,
+            y: 400,
+            width: 32,
+            height: 48,
+            vx: 0,
+            vy: 0,
+            speed: 5,
+            jumpPower: 12,
+            health: 100,
+            maxHealth: 100,
+            isGrounded: false,
+            canDoubleJump: true,
+            jumpsRemaining: 2,
+            isAttacking: false,
+            attackCooldown: 0
+        };
+        
+        // Enemies
+        const enemies = [
+            { x: 300, y: 350, width: 48, height: 40, vx: 1, health: 50, maxHealth: 50, type: 'whelp', damage: 15 },
+            { x: 600, y: 250, width: 48, height: 40, vx: -1, health: 50, maxHealth: 50, type: 'whelp', damage: 15 },
+            { x: 700, y: 150, width: 128, height: 96, vx: 0.5, health: 200, maxHealth: 200, type: 'boss', damage: 30 }
+        ];
+        
+        // Collectibles
+        const collectibles = [
+            { x: 200, y: 350, width: 32, height: 32, type: 'gem', value: 50, collected: false },
+            { x: 600, y: 250, width: 32, height: 32, type: 'gem', value: 50, collected: false },
+            { x: 400, y: 150, width: 32, height: 32, type: 'gem', value: 50, collected: false },
+            { x: 350, y: 350, width: 28, height: 28, type: 'potion', value: 25, collected: false },
+            { x: 650, y: 250, width: 28, height: 28, type: 'potion', value: 25, collected: false }
+        ];
+        
+        // Platforms
+        const platforms = [
+            { x: 0, y: 550, width: 800, height: 50 },
+            { x: 150, y: 400, width: 150, height: 20 },
+            { x: 550, y: 300, width: 150, height: 20 },
+            { x: 350, y: 200, width: 150, height: 20 }
+        ];
+        
+        // Hazards
+        const hazards = [
+            { x: 450, y: 534, width: 64, height: 16, damage: 20 },
+            { x: 550, y: 534, width: 64, height: 16, damage: 20 }
+        ];
+        
+        // Input handling
+        const keys = {};
+        let mouseX = 0, mouseY = 0;
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+        
+        canvas.addEventListener('click', (e) => {
+            if (gameState === 'playing') {
+                const rect = canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+                performAttack();
+            }
+        });
+        
+        // Initialize high score display to 0 immediately
+        window.addEventListener('DOMContentLoaded', () => {
+            const highScoreElement = document.getElementById('highScoreDisplay');
+            if (highScoreElement) {
+                highScoreElement.textContent = 'High Score: 0';
+                highScoreElement.style.display = 'block';
+            }
+        });
+        
+        // Load game data from localStorage
+        window.addEventListener('load', () => {
+            // Request game data from localStorage
+            window.parent.postMessage({ type: 'applaa-game-load-data', gameId: 'dragonspire' }, '*');
+            
+            // Listen for data response
+            window.addEventListener('message', (event) => {
+                if (event.data.type === 'applaa-game-data-loaded') {
+                    const gameData = event.data.data;
+                    if (gameData) {
+                        highScore = gameData.highScore || 0;
+                        playerName = gameData.lastPlayerName || '';
+                        scores = gameData.scores || [];
+                        
+                        // Update high score display
+                        const highScoreElement = document.getElementById('highScoreDisplay');
+                        if (highScoreElement) {
+                            highScoreElement.textContent = 'High Score: ' + highScore.toLocaleString();
+                        }
+                        
+                        // Pre-fill player name
+                        if (playerName) {
+                            document.getElementById('playerNameInput').value = playerName;
+                        }
+                        
+                        // Display top scores
+                        displayLeaderboard();
+                    }
+                }
+            });
+        });
+        
+        function displayLeaderboard() {
+            const scoresList = document.getElementById('scoresList');
+            scoresList.innerHTML = '';
+            
+            const topScores = scores.slice(0, 5);
+            topScores.forEach((scoreData, index) => {
+                const scoreElement = document.createElement('div');
+                scoreElement.textContent = `${index + 1}. ${scoreData.playerName} - ${scoreData.score}`;
+                scoresList.appendChild(scoreElement);
+            });
+        }
+        
+        function saveScore(name, finalScore) {
+            window.parent.postMessage({
+                type: 'applaa-game-save-score',
+                gameId: 'dragonspire',
+                playerName: name,
+                score: finalScore
+            }, '*');
+        }
+        
+        function startGame() {
+            playerName = document.getElementById('playerNameInput').value || 'Anonymous';
+            
+            // Reset game state
+            gameState = 'playing';
+            score = 0;
+            player.health = player.maxHealth;
+            player.x = 100;
+            player.y = 400;
+            player.vx = 0;
+            player.vy = 0;
+            
+            // Reset enemies
+            enemies[0].x = 300; enemies[0].y = 350; enemies[0].health = 50;
+            enemies[1].x = 600; enemies[1].y = 250; enemies[1].health = 50;
+            enemies[2].x = 700; enemies[2].y = 150; enemies[2].health = 200;
+            
+            // Reset collectibles
+            collectibles.forEach(c => c.collected = false);
+            
+            // Update UI
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            updateHUD();
+            
+            gameLoop();
+        }
+        
+        function updateHUD() {
+            document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+            document.getElementById('healthDisplay').textContent = `Health: ${player.health}/${player.maxHealth}`;
+            document.getElementById('highScoreHud').textContent = `Best: ${highScore}`;
+        }
+        
+        function performAttack() {
+            if (player.attackCooldown <= 0) {
+                player.isAttacking = true;
+                player.attackCooldown = 30;
+                
+                // Check for enemy hits
+                const attackRange = 60;
+                const attackDirection = player.vx >= 0 ? 1 : -1;
+                const attackX = player.x + (player.width / 2) + (attackDirection * attackRange);
+                
+                enemies.forEach(enemy => {
+                    if (enemy.health > 0) {
+                        const dist = Math.abs(enemy.x + enemy.width/2 - attackX);
+                        if (dist < attackRange && Math.abs(enemy.y - player.y) < 50) {
+                            enemy.health -= 25;
+                            score += 25;
+                            if (enemy.health <= 0) {
+                                score += enemy.type === 'boss' ? 1000 : 100;
+                                if (enemy.type === 'boss') {
+                                    victory();
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        function victory() {
+            gameState = 'victory';
+            saveScore(playerName, score);
+            
+            if (score > highScore) {
+                highScore = score;
+                document.getElementById('newHighScore').style.display = 'block';
+            } else {
+                document.getElementById('newHighScore').style.display = 'none';
+            }
+            
+            document.getElementById('gameOverTitle').textContent = 'VICTORY!';
+            document.getElementById('gameOverTitle').className = 'victory';
+            document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+            document.getElementById('finalHighScore').textContent = `High Score: ${highScore}`;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+        
+        function defeat() {
+            gameState = 'defeat';
+            saveScore(playerName, score);
+            
+            document.getElementById('gameOverTitle').textContent = 'DEFEAT';
+            document.getElementById('gameOverTitle').className = 'defeat';
+            document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+            document.getElementById('finalHighScore').textContent = `High Score: ${highScore}`;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+        
+        function restartGame() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            startGame();
+        }
+        
+        function mainMenu() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+            gameState = 'menu';
+        }
+        
+        function closeGame() {
+            window.close();
+        }
+        
+        function updatePlayer() {
+            // Movement
+            if (keys['a']) player.vx = -player.speed;
+            else if (keys['d']) player.vx = player.speed;
+            else player.vx *= 0.8;
+            
+            // Jumping
+            if (keys[' '] && player.jumpsRemaining > 0) {
+                player.vy = -player.jumpPower;
+                player.jumpsRemaining--;
+            }
+            
+            // Gravity
+            player.vy += 0.5;
+            if (player.vy > 15) player.vy = 15;
+            
+            // Update position
+            player.x += player.vx;
+            player.y += player.vy;
+            
+            // Platform collision
+            player.isGrounded = false;
+            platforms.forEach(platform => {
+                if (player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+                    
+                    // Landing on top
+                    if (player.vy > 0 && player.y < platform.y) {
+                        player.y = platform.y - player.height;
+                        player.vy = 0;
+                        player.isGrounded = true;
+                        player.jumpsRemaining = 2;
+                    }
+                }
+            });
+            
+            // Hazard collision
+            hazards.forEach(hazard => {
+                if (player.x < hazard.x + hazard.width &&
+                    player.x + player.width > hazard.x &&
+                    player.y < hazard.y + hazard.height &&
+                    player.y + player.height > hazard.y) {
+                    player.health -= hazard.damage * 0.016; // Damage over time
+                    if (player.health <= 0) {
+                        player.health = 0;
+                        defeat();
+                    }
+                }
+            });
+            
+            // Collectibles
+            collectibles.forEach(item => {
+                if (!item.collected &&
+                    player.x < item.x + item.width &&
+                    player.x + player.width > item.x &&
+                    player.y < item.y + item.height &&
+                    player.y + player.height > item.y) {
+                    
+                    item.collected = true;
+                    if (item.type === 'gem') {
+                        score += item.value;
+                    } else if (item.type === 'potion') {
+                        player.health = Math.min(player.health + item.value, player.maxHealth);
+                    }
+                }
+            });
+            
+            // Boundaries
+            if (player.x < 0) player.x = 0;
+            if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+            if (player.y > canvas.height) {
+                player.health = 0;
+                defeat();
+            }
+            
+            // Update attack cooldown
+            if (player.attackCooldown > 0) player.attackCooldown--;
+        }
+        
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                if (enemy.health <= 0) return;
+                
+                // Simple AI
+                if (enemy.type === 'whelp') {
+                    enemy.x += enemy.vx;
+                    if (enemy.x <= 150 || enemy.x >= 300) enemy.vx *= -1;
+                } else if (enemy.type === 'boss') {
+                    // Boss follows player slowly
+                    const dx = player.x - enemy.x;
+                    if (Math.abs(dx) > 100) {
+                        enemy.x += Math.sign(dx) * enemy.vx;
+                    }
+                    
+                    // Boss shoots fireballs (simplified)
+                    if (Math.random() < 0.01) {
+                        // Create fireball towards player
+                        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                        // Simplified: just damage player if close
+                        const dist = Math.sqrt(dx * dx + Math.pow(player.y - enemy.y, 2));
+                        if (dist < 200) {
+                            player.health -= 0.5;
+                            if (player.health <= 0) {
+                                player.health = 0;
+                                defeat();
+                            }
+                        }
+                    }
+                }
+                
+                // Collision with player
+                if (player.x < enemy.x + enemy.width &&
+                    player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.height > enemy.y) {
+                    
+                    player.health -= enemy.damage * 0.016;
+                    if (player.health <= 0) {
+                        player.health = 0;
+                        defeat();
+                    }
+                }
+            });
+        }
+        
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = '#1a0033';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#2d1b69');
+            gradient.addColorStop(1, '#0f0c29');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw platforms
+            ctx.fillStyle = '#4a3c8c';
+            platforms.forEach(platform => {
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                // Platform edge highlight
+                ctx.strokeStyle = '#6b5cb5';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
+            });
+            
+            // Draw hazards
+            ctx.fillStyle = '#ff4444';
+            hazards.forEach(hazard => {
+                // Draw spikes
+                for (let i = 0; i < hazard.width; i += 8) {
+                    ctx.beginPath();
+                    ctx.moveTo(hazard.x + i, hazard.y + hazard.height);
+                    ctx.lineTo(hazard.x + i + 4, hazard.y);
+                    ctx.lineTo(hazard.x + i + 8, hazard.y + hazard.height);
+                    ctx.fill();
+                }
+            });
+            
+            // Draw collectibles
+            collectibles.forEach(item => {
+                if (!item.collected) {
+                    ctx.save();
+                    ctx.translate(item.x + item.width/2, item.y + item.height/2);
+                    
+                    if (item.type === 'gem') {
+                        // Draw gem
+                        ctx.fillStyle = '#00ffff';
+                        ctx.rotate(Date.now() * 0.002);
+                        ctx.fillRect(-item.width/2, -item.height/2, item.width, item.height);
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(-item.width/2, -item.height/2, item.width, item.height);
+                    } else if (item.type === 'potion') {
+                        // Draw potion
+                        ctx.fillStyle = '#ff00ff';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, item.width/2, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                    
+                    ctx.restore();
+                }
+            });
+            
+            // Draw enemies
+            enemies.forEach(enemy => {
+                if (enemy.health > 0) {
+                    ctx.fillStyle = enemy.type === 'boss' ? '#8b0000' : '#ff6600';
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    
+                    // Health bar
+                    const healthPercent = enemy.health / enemy.maxHealth;
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(enemy.x, enemy.y - 10, enemy.width, 5);
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(enemy.x, enemy.y - 10, enemy.width * healthPercent, 5);
+                }
+            });
+            
+            // Draw player
+            ctx.fillStyle = player.health > 30 ? '#00ff00' : '#ff0000';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // Draw attack effect
+            if (player.isAttacking && player.attackCooldown > 20) {
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+                const attackDirection = player.vx >= 0 ? 1 : -1;
+                ctx.fillRect(player.x + player.width/2, player.y, 40 * attackDirection, player.height);
+            }
+            
+            updateHUD();
+        }
+        
+        function gameLoop() {
+            if (gameState === 'playing') {
+                updatePlayer();
+                updateEnemies();
+                render();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
